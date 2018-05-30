@@ -10,14 +10,13 @@ from io import BytesIO
 class DataLoader:
 
     def __init__( self,
-                  rootPath,
+                  dataPath,
                   filenames,
                   lblFilename ,
                   batchSize = 20,
                   dim = 224,
                   timesteps = 16 ):
         self.dim       = dim
-        self.rootPath  = rootPath
         self.timesteps = timesteps
         self.filenames = filenames
         self.length    = filenames.shape[ 0 ]
@@ -25,7 +24,12 @@ class DataLoader:
         self.setBatchSize( batchSize )
         self.shuffle()
         self.generateLabelsDict( lblFilename )
-
+        with open( dataPath, 'rb' ) as f:
+            self.data = pickle.load( f )
+        
+        self.curBatchLen = None
+        self.batch  = None
+        self.labels = None
 
 
     def generateLabelsDict( self, filename ):
@@ -33,7 +37,6 @@ class DataLoader:
         f = open( filename , 'r' )
         for line in f.readlines():
             self.labelsDict[ line.split()[ 1 ] ] = line.split()[ 0 ]
-
 
 
     def shuffle( self ):
@@ -52,6 +55,14 @@ class DataLoader:
             self.shuffle()
 
 
+    def allocateBatch( self, batchLen ):
+        if self.curBatchLen != batchLen :
+            self.curBatchLen = batchLen
+            self.batch  = np.empty( ( self.curBatchLen, self.dim, self.dim, 2, self.timesteps),
+                                      dtype = 'float32')
+            self.labels = np.empty( (self.curBatchLen , 101) )
+
+
     def randomBatchPaths( self ):
         batchPaths = list()
         endIndex = self.index + self.batchSize
@@ -59,9 +70,8 @@ class DataLoader:
             endIndex = self.length
         for i in range( self.index , endIndex):
             batchPaths += [ self.filenames[ self.ids[ i ] ].split('.')[0] ]
-        self.curBatchLen = len( batchPaths )
+        self.allocateBatch( len( batchPaths ) )
         self.incIndex()
-        # batchPaths is a list with video names
         return batchPaths
 
 
@@ -110,34 +120,38 @@ class DataLoader:
 
     def randomBatchFlow( self ):
         batchPaths = self.randomBatchPaths()
-        batch  = list()
-        labels = list()
-        for batchPath in batchPaths:
-            fullPath  = os.path.join( self.rootPath, batchPath )
-            video = pickle.load( open( fullPath + '.pickle' , 'rb' ) )
-
+        # labels = list()
+        for i, batchPath in enumerate(batchPaths):
+            # fullPath  = os.path.join( self.rootPath, batchPath )
+            # video = pickle.load( open( fullPath + '.pickle' , 'rb' ) )
+            video = self.data[ batchPath ]
+            
             start = np.random.randint( len( video[ 'u' ] ) - self.timesteps )
-            batch  += [ self.stackFlow( video, start, self.timesteps ) ]
+            # batch  += [ self.stackFlow( video, start, self.timesteps ) ]
 
+            stack = self.stackFlow( video, start, self.timesteps )
+            self.batch[ i ] = self.stackFlow( video, start, self.timesteps )
             className = batchPath.split('/')[ 0 ]
-            label = np.zeros(( 101 ) , dtype = 'float32')
-            label[ int( self.labelsDict[ className ] ) - 1 ] = 1.0
-            labels += [ label ]
+            self.labels[ i ] = np.zeros(( 101 ) , dtype = 'float32')
+            self.labels[ i ][ int( self.labelsDict[ className ] ) - 1 ] = 1.0
+            # labels += [ label ]
+            # self.labels[ i ] = label
 
-        batch = np.array( batch, dtype = 'float32' )
-        batch = np.reshape( batch , [ self.curBatchLen , 
-                                      self.dim * self.dim * 2 * self.timesteps] )
-        labels = np.array( labels )
-        return batch, labels
+        batch = np.reshape( self.batch , [ self.curBatchLen, 
+                                           self.dim * self.dim * 2 * self.timesteps] )
+        # labels = np.array( labels )
+        return batch, self.labels
 
 
 if __name__ == '__main__':
     # rootPath    = '/home/olorin/Documents/caetano/datasets/UCF-101_flow'
     # rootPath    = '/media/olorin/Documentos/caetano/datasets/UCF-101_flow'
-    rootPath    = '/home/caetano/Documents/datasets/UCF-101_flow'
+    # rootPath    = '/home/caetano/Documents/datasets/UCF-101_flow'
+    # rootPath    = '/lustre/cranieri/UCF-101_flow'
+    dataPath    = '/lustre/cranieri/UCF-101_flow/data.pickle'
     filenames   = np.load( '../splits/trainlist011.npy' )
     lblFilename = '../classInd.txt'
-    dataLoader = DataLoader( rootPath, filenames, lblFilename )
+    dataLoader = DataLoader( dataPath, filenames, lblFilename )
     # batch, labels =  dataLoader.randomBatchFlow()
     for i in range( 100 ):
         t = time.time()

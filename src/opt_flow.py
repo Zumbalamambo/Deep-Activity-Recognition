@@ -7,10 +7,11 @@ from io import BytesIO
 import pickle
 
 
+"""
 def make_dir( path ):
     if not os.path.exists( path ):
         os.mkdir( path )
-
+"""
 
 def flow2bgr( raw_flow ):
     hsv = np.zeros(( raw_flow.shape[ 0 ], 
@@ -38,13 +39,15 @@ def store_frame_flow( u, v, frame_id, u_dir, v_dir ):
 def store_video_flow( u_list, v_list,
                       ur_list, vr_list,
                       out_dir, video_name ):
-    print(out_dir, video_name)
     with open( os.path.join( out_dir , video_name + '.pickle' ) , 'wb' ) as f :
         pickle.dump( { 'u' : np.array( u_list ),
                        'v' : np.array( v_list ),
                        'u_range' : np.array( ur_list ),
                        'v_range' : np.array( vr_list ) } , f )
 
+def store_dataset( data_dict, out_dir ):
+    with open( os.path.join( out_dir , 'data.pickle' ) , 'wb' ) as f :
+        pickle.dump( data_dict , f )
 
 def prep_flow_frame( u, v ):
     u = cv2.normalize( u, u, 0, 255, cv2.NORM_MINMAX )
@@ -60,7 +63,7 @@ def prep_flow_frame( u, v ):
     return u_out, v_out
 
 
-def convert_video( video_path, out_dir ):
+def convert_video( video_path ):
  
     cap = cv2.VideoCapture( video_path + '.avi' )
     ret, frame1 = cap.read()
@@ -99,7 +102,6 @@ def convert_video( video_path, out_dir ):
         ur_list += [ u_range ]
         vr_list += [ v_range ]
 
-
         # TEST #
         #ut = cv2.imread( os.path.join( u_dir, frame_id + '.jpg' ),
         #                 cv2.IMREAD_GRAYSCALE )
@@ -111,8 +113,13 @@ def convert_video( video_path, out_dir ):
         count += 1
 
     video_name = video_path.split('/')[-1]
-    store_video_flow( u_list, v_list, ur_list, vr_list, out_dir, video_name )
+    #store_video_flow( u_list, v_list, ur_list, vr_list, out_dir, video_name )
+    video = { 'u' : np.array( u_list ),
+              'v' : np.array( v_list ),
+              'u_range' : np.array( ur_list ),
+              'v_range' : np.array( vr_list ) }
     cap.release()
+    return video
 
 
 
@@ -120,31 +127,28 @@ def process_video( input_dir , output_dir , raw_filename ):
     path_dirs = raw_filename.split('/')
 
     class_inp_dir = os.path.join( input_dir  , path_dirs[0] )
-    class_out_dir = os.path.join( output_dir , path_dirs[0] )
+    #class_out_dir = os.path.join( output_dir , path_dirs[0] )
     filename_no_ext = path_dirs[1].split('.')[0]
-    make_dir( class_out_dir )
+    #make_dir( class_out_dir )
     filepath = os.path.join( class_inp_dir, filename_no_ext )
 
     print( 'Converting' , filename )
-    convert_video( filepath, class_out_dir )
+    video = convert_video( filepath )
     print( 'Done' )
+    return video
 
 #os.environ[ 'CUDA_VISIBLE_DEVICES' ] = '0'
 
-input_dir  = '/home/caetano/Documents/datasets/UCF-101'
-output_dir = '/home/caetano/Documents/datasets/UCF-101_flow'
-trainlist = np.load( '../splits/trainlist01.npy' )
-testlist = np.load( '../splits/testlist01.npy' )
+input_dir  = '/lustre/cranieri/UCF-101'
+output_dir = '/lustre/cranieri/UCF-101_flow'
+trainlist = list(np.load( '../splits/trainlist011.npy' ))
+testlist = list(np.load( '../splits/testlist01.npy' ))
+video_dict = dict()
 
 for filename in trainlist:
     t = time.time()
-    process_video( input_dir, output_dir, filename )
-    print( 'Time:', time.time() - t )
-for filename in testlist:
-    t = time.time()
-    process_video( input_dir, output_dir, filename )
+    video_name = filename.split('.')[0] 
+    video_dict[ video_name ] = process_video( input_dir, output_dir, filename )
     print( 'Time:', time.time() - t )
     
-
-
-
+store_dataset( video_dict , output_dir )
