@@ -141,6 +141,7 @@ def process_video( input_dir , output_dir , raw_filename ):
 
 input_dir  = '/lustre/cranieri/UCF-101'
 output_dir = '/lustre/cranieri/UCF-101_flow'
+<<<<<<< HEAD
 trainlist = list(np.load( '../splits/trainlist011.npy' ))
 testlist = list(np.load( '../splits/testlist01.npy' ))
 video_dict = dict()
@@ -150,5 +151,18 @@ for filename in trainlist:
     video_name = filename.split('.')[0] 
     video_dict[ video_name ] = process_video( input_dir, output_dir, filename )
     print( 'Time:', time.time() - t )
+=======
+trainlist = np.load( '../splits/trainlist011.npy' )
+testlist = np.load( '../splits/testlist01.npy' )
+
+for filename in trainlist:
+    t = time.time()
+    process_video( input_dir, output_dir, filename )
+    print( 'Time:', time.time() - t )
+#for filename in testlist:
+#    t = time.time()
+#    process_video( input_dir, output_dir, filename )
+#    print( 'Time:', time.time() - t )
+>>>>>>> 1d1214a307abae264b381487f799cdc11999fe80
     
 store_dataset( video_dict , output_dir )
