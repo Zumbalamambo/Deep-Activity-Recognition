@@ -147,12 +147,9 @@ if __name__ == '__main__':
     # rootPath    = '/home/olorin/Documents/caetano/datasets/UCF-101_flow'
     # rootPath    = '/media/olorin/Documentos/caetano/datasets/UCF-101_flow'
     # rootPath    = '/home/caetano/Documents/datasets/UCF-101_flow'
-<<<<<<< HEAD
     # rootPath    = '/lustre/cranieri/UCF-101_flow'
     dataPath    = '/lustre/cranieri/UCF-101_flow/data.pickle'
-=======
     rootPath    = '/lustre/cranieri/UCF-101_flow'
->>>>>>> 1d1214a307abae264b381487f799cdc11999fe80
     filenames   = np.load( '../splits/trainlist011.npy' )
     lblFilename = '../classInd.txt'
     dataLoader = DataLoader( dataPath, filenames, lblFilename )
