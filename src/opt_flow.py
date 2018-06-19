@@ -45,8 +45,8 @@ def store_video_flow( u_list, v_list,
                        'u_range' : np.array( ur_list ),
                        'v_range' : np.array( vr_list ) } , f )
 
-def store_dataset( data_dict, out_dir ):
-    with open( os.path.join( out_dir , 'data.pickle' ) , 'wb' ) as f :
+def store_dataset( data_dict, out_dir, filename ):
+    with open( os.path.join( out_dir , filename ) , 'wb' ) as f :
         pickle.dump( data_dict , f )
 
 def prep_flow_frame( u, v ):
@@ -122,7 +122,6 @@ def convert_video( video_path ):
     return video
 
 
-
 def process_video( input_dir , output_dir , raw_filename ):
     path_dirs = raw_filename.split('/')
 
@@ -141,7 +140,7 @@ def process_video( input_dir , output_dir , raw_filename ):
 
 input_dir  = '/lustre/cranieri/UCF-101'
 output_dir = '/lustre/cranieri/UCF-101_flow'
-<<<<<<< HEAD
+
 trainlist = list(np.load( '../splits/trainlist011.npy' ))
 testlist = list(np.load( '../splits/testlist01.npy' ))
 video_dict = dict()
@@ -151,18 +150,6 @@ for filename in trainlist:
     video_name = filename.split('.')[0] 
     video_dict[ video_name ] = process_video( input_dir, output_dir, filename )
     print( 'Time:', time.time() - t )
-=======
-trainlist = np.load( '../splits/trainlist011.npy' )
-testlist = np.load( '../splits/testlist01.npy' )
 
-for filename in trainlist:
-    t = time.time()
-    process_video( input_dir, output_dir, filename )
-    print( 'Time:', time.time() - t )
-#for filename in testlist:
-#    t = time.time()
-#    process_video( input_dir, output_dir, filename )
-#    print( 'Time:', time.time() - t )
->>>>>>> 1d1214a307abae264b381487f799cdc11999fe80
     
-store_dataset( video_dict , output_dir )
+store_dataset( video_dict , output_dir, 'data.pickle' )
